@@ -74,4 +74,4 @@ Artificial intelligence tools were used in the development of this card, includi
 
 ## License
 
-MIT
+GPL-3.0 license
