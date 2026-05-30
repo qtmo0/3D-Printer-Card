@@ -1,0 +1,292 @@
+type: custom:button-card
+entity: sensor.prusalink
+show_name: false
+show_state: false
+show_icon: false
+variables:
+  # ── ANZEIGE-OPTIONEN ──────────────────────────────────────────
+  show_buttons: true             # Steuerbuttons (Abbrechen/Pause/Strom) anzeigen
+  show_power_button: true        # Drucker Ein/Aus-Button bei Idle anzeigen
+  show_confirmations: true       # Bestätigung vor Aktionen verlangen
+  confirmation_text: "Really?"   # Text der bei Erstklick angezeigt wird
+  confirmation_timeout: 3        # Sekunden bis Bestätigung verfällt
+
+  # ── NAVIGATION ────────────────────────────────────────────────
+  navigation_path: /lovelace/printer   # Klick auf Karte navigiert hierhin
+
+  # ── ENTITÄTEN ─────────────────────────────────────────────────
+  # PrusaLink Sensoren
+  entity_status: sensor.prusalink
+  entity_progress: sensor.prusalink_progress
+  entity_material: sensor.prusalink_material
+  entity_filename: sensor.prusalink_filename
+  entity_nozzle: sensor.prusalink_nozzle_temperature
+  entity_nozzle_target: sensor.prusalink_nozzle_target_temperature
+  entity_bed: sensor.prusalink_heatbed_temperature
+  entity_bed_target: sensor.prusalink_heatbed_target_temperature
+  entity_print_start: sensor.prusalink_print_start
+  entity_print_finish: sensor.prusalink_print_finish
+  entity_preview: camera.prusalink_preview
+
+  # Umgebungssensoren
+  entity_enclosure_temp: sensor.ble_temperature_thermometer_enclosure
+  entity_power_watts: sensor.tasmota_mk4_energy_power
+  entity_power_switch: switch.tasmota_mk4
+
+  # Steuerbuttons
+  entity_btn_cancel: button.prusalink_cancel_job
+  entity_btn_pause: button.prusalink_pause_job
+  entity_btn_resume: button.prusalink_resume_job
+
+  # ── TITEL & LABELS ────────────────────────────────────────────
+  printer_name: MK4
+
+tap_action:
+  action: navigate
+  navigation_path: "[[[ return variables.navigation_path; ]]]"
+
+styles:
+  card:
+    - padding: 8px
+    - border-radius: 12px
+    - cursor: pointer
+  grid:
+    - grid-template-areas: "\"content\""
+    - grid-template-columns: 1fr
+    - grid-template-rows: 1fr
+  custom_fields:
+    content:
+      - width: 100%
+      - padding: 8px
+      - box-sizing: border-box
+custom_fields:
+  content: |
+    [[[
+      // ── Variablen aus Config ──────────────────────────────
+      const showButtons = variables.show_buttons;
+      const showPowerButton = variables.show_power_button;
+      const showConfirm = variables.show_confirmations;
+      const confirmText = variables.confirmation_text || 'Really?';
+      const confirmTimeout = (variables.confirmation_timeout || 3) * 1000;
+      const printerName = variables.printer_name;
+
+      // ── Globaler Confirmation-Helper (nur einmal definieren) ──
+      if (!window._prusaConfirm) {
+        window._prusaConfirm = function(btn, callback, text, timeout) {
+          if (btn.dataset.confirming === 'true') {
+            callback();
+            btn.dataset.confirming = '';
+            btn.innerHTML = btn.dataset.originalHtml;
+            btn.style.background = btn.dataset.originalBg;
+            btn.style.borderColor = btn.dataset.originalBorder;
+          } else {
+            btn.dataset.confirming = 'true';
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.dataset.originalBg = btn.style.background;
+            btn.dataset.originalBorder = btn.style.borderColor;
+            btn.innerHTML = '<span style="font-weight:500;pointer-events:none">' + text + '</span>';
+            btn.style.background = 'rgba(228,75,74,0.15)';
+            btn.style.borderColor = 'rgba(228,75,74,0.5)';
+            setTimeout(() => {
+              if (btn.dataset.confirming === 'true') {
+                btn.dataset.confirming = '';
+                btn.innerHTML = btn.dataset.originalHtml;
+                btn.style.background = btn.dataset.originalBg;
+                btn.style.borderColor = btn.dataset.originalBorder;
+              }
+            }, timeout);
+          }
+        };
+      }
+
+      // ── Werte lesen ───────────────────────────────────────
+      const s = states[variables.entity_status]?.state;
+      const prog = Math.round(parseFloat(states[variables.entity_progress]?.state) || 0);
+      const rawMaterial = states[variables.entity_material]?.state;
+      const material = (!rawMaterial || rawMaterial === 'unavailable') ? 'Filament' : rawMaterial;
+      const filename = states[variables.entity_filename]?.state ?? '—';
+      const nozzle = Math.round(parseFloat(states[variables.entity_nozzle]?.state) || 0);
+      const nozzleT = Math.round(parseFloat(states[variables.entity_nozzle_target]?.state) || 0);
+      const bed = Math.round(parseFloat(states[variables.entity_bed]?.state) || 0);
+      const bedT = Math.round(parseFloat(states[variables.entity_bed_target]?.state) || 0);
+      const enc = parseFloat(states[variables.entity_enclosure_temp]?.state || 0).toFixed(1);
+      const watts = states[variables.entity_power_watts]?.state ?? '—';
+      const startIso = states[variables.entity_print_start]?.state;
+      const finishIso = states[variables.entity_print_finish]?.state;
+      const entityPic = states[variables.entity_preview]?.attributes?.entity_picture ?? '';
+      const powerState = states[variables.entity_power_switch]?.state;
+      const isPowerOn = powerState === 'on';
+
+      // ── Status-Mapping ────────────────────────────────────
+      const statusMap = {
+        printing:  ['Druckt',         '#378ADD'],
+        paused:    ['Pausiert',       '#BA7517'],
+        busy:      ['Beschäftigt',    '#BA7517'],
+        idle:      ['Bereit',         '#888780'],
+        ready:     ['Bereit',         '#888780'],
+        finished:  ['Fertig',         '#639922'],
+        error:     ['Fehler',         '#E24B4A'],
+        attention: ['Eingriff nötig', '#E24B4A'],
+        stopped:   ['Gestoppt',       '#E24B4A'],
+        unavailable: ['Offline',      '#888780'],
+      };
+      const [statusLabel, dotColor] = statusMap[s] ?? [s, '#888780'];
+      const isPrinting = ['printing','paused','busy'].includes(s);
+      const isPaused = s === 'paused';
+
+      // ── Zeit-Helper ───────────────────────────────────────
+      function fmtTime(iso) {
+        if (!iso || iso === 'unavailable') return '—';
+        return new Date(iso).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+      }
+      function fmtDuration(minutes) {
+        if (minutes <= 0) return '';
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        return h > 0 ? `${h}h\u00a0${m}m` : `${m}m`;
+      }
+      function fmtElapsed(iso) {
+        if (!iso || iso === 'unavailable') return '';
+        const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+        return fmtDuration(diff);
+      }
+      function fmtRemaining(iso) {
+        if (!iso || iso === 'unavailable') return '';
+        const diff = Math.floor((new Date(iso).getTime() - Date.now()) / 60000);
+        return fmtDuration(diff);
+      }
+
+      const elapsed = fmtElapsed(startIso);
+      const remaining = fmtRemaining(finishIso);
+      const startTime = fmtTime(startIso);
+      const finishTime = fmtTime(finishIso);
+
+      // Label-Teile zusammenbauen
+      const labelParts = [`${prog}%`];
+      if (elapsed) labelParts.push(`${elapsed} vergangen`);
+      if (remaining) labelParts.push(`noch ${remaining}`);
+      const progressLabel = labelParts.join('\u00a0·\u00a0');
+
+      // ── Action-String Helper ──────────────────────────────
+      const actionString = (domain, service, entityId) =>
+        `document.querySelector('home-assistant').hass.callService('${domain}','${service}',{entity_id:'${entityId}'})`;
+
+      // ── Event-Stop Snippet für alle Button-Events ─────────
+      // Wichtig für iOS/Mobile: pointerdown und pointerup MÜSSEN
+      // gestoppt werden, sonst registriert button-card den Tap
+      // bevor onclick überhaupt feuert
+      const stopEvents = `onpointerdown="event.stopPropagation()" onpointerup="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()"`;
+
+      // ── Onclick Handler mit Confirmation-Logik ────────────
+      const onclickHandler = (action) => {
+        if (showConfirm) {
+          return `event.stopPropagation();event.preventDefault();window._prusaConfirm(this, function() { ${action} }, '${confirmText}', ${confirmTimeout})`;
+        }
+        return `event.stopPropagation();event.preventDefault();${action}`;
+      };
+
+      // ── Style Helper ──────────────────────────────────────
+      const chip = (bg, border, color, icon, text) =>
+        `<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:3px 8px;border-radius:999px;background:${bg};color:${color};border:0.5px solid ${border};white-space:nowrap;line-height:1.6">${icon}${text}</span>`;
+
+      const btnStyle = (bg, border, color) =>
+        `flex:1;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;padding:10px 8px;border-radius:10px;border:0.5px solid ${border};background:${bg};cursor:pointer;font-size:12px;color:${color};font-family:inherit;transition:background 0.2s,border-color 0.2s;touch-action:manipulation;-webkit-tap-highlight-color:transparent`;
+
+      const divider = `<div style="height:0.5px;background:rgba(128,128,128,0.2);margin:12px 0"></div>`;
+
+      // ── Vorschaubild ──────────────────────────────────────
+      const imgBox = entityPic
+        ? `<img src="${entityPic}" style="width:88px;height:88px;object-fit:cover;display:block;border-radius:8px" />`
+        : `<div style="width:88px;height:88px;border-radius:8px;background:rgba(128,128,128,0.08);border:0.5px solid rgba(128,128,128,0.15);display:flex;align-items:center;justify-content:center">
+             <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="rgba(128,128,128,0.3)" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+           </div>`;
+
+      // ── Druck-Info-Block ──────────────────────────────────
+      const printBlock = isPrinting ? `
+        ${divider}
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="flex-shrink:0;border-radius:8px;overflow:hidden;width:88px;height:88px">${imgBox}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;color:#888;margin-bottom:2px">Datei</div>
+            <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:10px">${filename}</div>
+            <div style="font-size:11px;font-weight:500;color:#185FA5;margin-bottom:5px">${progressLabel}</div>
+            <div style="position:relative;height:10px;background:rgba(128,128,128,0.15);border-radius:999px">
+              <div style="height:100%;width:${prog}%;background:#378ADD;border-radius:999px;min-width:${prog>0?'10px':'0'}"></div>
+              <div style="position:absolute;left:calc(${prog}% - 5px);top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#378ADD;border:2px solid white;transition:left 0.3s"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px">
+              <span style="font-size:11px;color:#888">${startTime}</span>
+              <span style="font-size:11px;color:#3B6D11">~${finishTime}</span>
+            </div>
+          </div>
+        </div>` : `
+        ${divider}
+        <div style="font-size:13px;color:#888;text-align:center;padding:6px 0">Kein aktiver Druck</div>`;
+
+      // ── Steuerbuttons ─────────────────────────────────────
+      const pauseBtn = isPaused
+        ? `<button ${stopEvents} onclick="${onclickHandler(actionString('button','press',variables.entity_btn_resume))}"
+            style="${btnStyle('rgba(59,109,17,0.06)','rgba(59,109,17,0.3)','#27500A')}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="#3B6D11" style="pointer-events:none"><polygon points="6,4 20,12 6,20"/></svg>
+            Weiter
+          </button>`
+        : `<button ${stopEvents} onclick="${onclickHandler(actionString('button','press',variables.entity_btn_pause))}"
+            style="${btnStyle('rgba(128,128,128,0.05)','rgba(128,128,128,0.2)','#444441')}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="#444441" style="pointer-events:none"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            Pause
+          </button>`;
+
+      const powerBtn = `
+        <button ${stopEvents} onclick="${onclickHandler(actionString('switch', isPowerOn ? 'turn_off' : 'turn_on', variables.entity_power_switch))}"
+          style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;border:0.5px solid ${isPowerOn ? 'rgba(228,75,74,0.3)' : 'rgba(59,109,17,0.3)'};background:${isPowerOn ? 'rgba(228,75,74,0.06)' : 'rgba(59,109,17,0.06)'};cursor:pointer;font-size:13px;color:${isPowerOn ? '#A32D2D' : '#27500A'};font-family:inherit;transition:background 0.2s,border-color 0.2s;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${isPowerOn ? '#E24B4A' : '#3B6D11'}" stroke-width="2" stroke-linecap="round" style="pointer-events:none"><path d="M12 3v5"/><path d="M6.3 6.3a9 9 0 1 0 11.4 0"/></svg>
+          ${isPowerOn ? 'Drucker ausschalten' : 'Drucker einschalten'}
+        </button>`;
+
+      // ── Button-Bereich (bedingt anzeigen) ─────────────────
+      let actionButtons = '';
+      if (showButtons) {
+        if (isPrinting) {
+          actionButtons = `
+            ${divider}
+            <div style="display:flex;gap:8px">
+              <button ${stopEvents} onclick="${onclickHandler(actionString('button','press',variables.entity_btn_cancel))}"
+                style="${btnStyle('rgba(228,75,74,0.06)','rgba(228,75,74,0.3)','#A32D2D')}">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="#E24B4A" style="pointer-events:none"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+                Abbrechen
+              </button>
+              ${pauseBtn}
+              <button ${stopEvents} onclick="${onclickHandler(actionString('switch','toggle',variables.entity_power_switch))}"
+                style="${btnStyle('rgba(186,119,23,0.06)','rgba(186,119,23,0.3)','#633806')}">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#BA7517" stroke-width="2" stroke-linecap="round" style="pointer-events:none"><path d="M12 3v5"/><path d="M6.3 6.3a9 9 0 1 0 11.4 0"/></svg>
+                Strom
+              </button>
+            </div>`;
+        } else if (showPowerButton) {
+          actionButtons = `${divider}${powerBtn}`;
+        }
+      }
+
+      // ── Finales Layout ────────────────────────────────────
+      return `
+        <div style="font-family:var(--primary-font-family,sans-serif);text-align:left;width:100%">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+              <div style="width:8px;height:8px;border-radius:50%;background:${dotColor}"></div>
+              <div>
+                <div style="font-size:15px;font-weight:500">${printerName}</div>
+                <div style="font-size:12px;color:#888">${statusLabel}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+              ${chip('#FAEEDA','#EF9F27','#633806','🔥',`${nozzle}°/${nozzleT}°`)}
+              ${chip('#FAECE7','#D85A30','#712B13','▦',`${bed}°/${bedT}°`)}
+              ${chip('#E1F5EE','#1D9E75','#085041','◈',`${enc}°C`)}
+              ${chip('#E6F1FB','#378ADD','#0C447C','●',material)}
+              ${chip('#FAEEDA','#EF9F27','#633806','⚡',`${watts}W`)}
+            </div>
+          </div>
+          ${printBlock}
+          ${actionButtons}
+        </div>`;
+    ]]]
