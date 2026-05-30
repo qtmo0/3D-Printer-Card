@@ -103,7 +103,7 @@ custom_fields:
       const s = states[variables.entity_status]?.state;
       const prog = Math.round(parseFloat(states[variables.entity_progress]?.state) || 0);
       const rawMaterial = states[variables.entity_material]?.state;
-      const material = (!rawMaterial || rawMaterial === 'unavailable') ? 'Filament' : rawMaterial;
+      const material = (!rawMaterial || rawMaterial === 'unavailable') ? 'Plastic' : rawMaterial;
       const filename = states[variables.entity_filename]?.state ?? '—';
       const nozzle = Math.round(parseFloat(states[variables.entity_nozzle]?.state) || 0);
       const nozzleT = Math.round(parseFloat(states[variables.entity_nozzle_target]?.state) || 0);
