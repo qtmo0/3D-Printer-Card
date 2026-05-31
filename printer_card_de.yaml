@@ -40,7 +40,7 @@ variables:
 
   # ── TITEL & LABELS ────────────────────────────────────────────
   printer_name: MK4
-  locale: en-DE                  # Time format locale (e.g. en-GB, de-DE, en-US)
+  locale: de-DE                  # Time format locale (e.g. en-GB, de-DE, en-US)
 
 
 tap_action:
