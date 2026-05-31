@@ -47,7 +47,7 @@ All settings live in the `variables:` block at the top of the YAML. No need to t
 | `confirmation_timeout` | `3` | Seconds before confirmation resets |
 | `navigation_path` | `/lovelace/printer` | Where card tap navigates to |
 | `printer_name` | `MK4` | Display name shown in the card header |
-| `locale` | `en-US` | `en-US` for 12-hour format or `en-DE` for 24-hour format|
+| `locale` | `en-GB` | `en-US` for 12-hour format or `en-GB` for 24-hour format|
 
 ### Entities
 
