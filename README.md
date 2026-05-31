@@ -66,7 +66,7 @@ VariableChipRequired hardwareentity_enclosure_tempEnclosure temperatureBLE therm
 - **Disable a section** by setting its `show_*` boolean to `false`
 - **Reuse for a second printer** by copying the card and updating the `entity_*` variables
 - **Translate labels** by editing the `statusMap` and button labels in the template
-- - **Time format** is controlled by the `locale` variable. Set it to `en-GB` for 24-hour format (14:47), `en-US` for 12-hour format (2:47 PM), or any other valid BCP 47 locale tag to match your region.
+- **Time format** is controlled by the `locale` variable. Set it to `en-GB` for 24-hour format (14:47), `en-US` for 12-hour format (2:47 PM), or any other valid BCP 47 locale tag to match your region.
 
 
 ## Screenshots
