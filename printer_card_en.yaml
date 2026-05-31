@@ -29,8 +29,8 @@ variables:
   entity_preview: camera.prusalink_preview
 
   # Environment Sensors
-  entity_enclosure_temp: sensor.ble_temperature_thermometer_enclosure
-  entity_power_watts: sensor.tasmota_mk4_energy_power
+  entity_enclosure_temp: sensor.ble_temperature_thermometer_enclosure    # leave empty → chip hidden
+  entity_power_watts: sensor.tasmota_mk4_energy_power                    # leave empty → chip hidden
   entity_power_switch: switch.tasmota_mk4
 
   # Control Buttons
