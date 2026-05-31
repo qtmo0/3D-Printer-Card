@@ -77,7 +77,6 @@ Two entities are fully optional — if you don't have the hardware, simply leave
 
 ![3D Printer Card Print Finished](https://raw.githubusercontent.com/qtmo0/3D-Printer-Card/refs/heads/main/screenshot_4.png)
 
-The last screenshot is from the German version, which might suit you if you speak German. However, feel free to choose the English version instead.
 
 ## Artificial Intelligence
 
