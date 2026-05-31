@@ -40,6 +40,8 @@ variables:
 
   # ── TITEL & LABELS ────────────────────────────────────────────
   printer_name: MK4
+  locale: en-DE                  # Time format locale (e.g. en-GB, de-DE, en-US)
+
 
 tap_action:
   action: navigate
@@ -69,6 +71,8 @@ custom_fields:
       const confirmText = variables.confirmation_text || 'Really?';
       const confirmTimeout = (variables.confirmation_timeout || 3) * 1000;
       const printerName = variables.printer_name;
+      const locale = variables.locale || 'en-GB';
+
 
       // ── Globaler Confirmation-Helper (nur einmal definieren) ──
       if (!window._prusaConfirm) {
@@ -137,7 +141,7 @@ custom_fields:
       // ── Zeit-Helper ───────────────────────────────────────
       function fmtTime(iso) {
         if (!iso || iso === 'unavailable') return '—';
-        return new Date(iso).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+        return new Date(iso).toLocaleTimeString(locale, {hour:'2-digit', minute:'2-digit'});
       }
       function fmtDuration(minutes) {
         if (minutes <= 0) return '';
