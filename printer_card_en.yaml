@@ -14,6 +14,10 @@ variables:
   # ── NAVIGATION ────────────────────────────────────────────────
   navigation_path: /lovelace/printer   # Card tap navigates here
 
+  # ── TITLE & LABELS ────────────────────────────────────────────
+  printer_name: MK4
+  locale: en-GB                  # Time format locale (e.g. en-GB, de-DE, en-US)
+
   # ── ENTITIES ──────────────────────────────────────────────────
   # PrusaLink Sensors
   entity_status: sensor.prusalink
@@ -37,9 +41,6 @@ variables:
   entity_btn_cancel: button.prusalink_cancel_job
   entity_btn_pause: button.prusalink_pause_job
   entity_btn_resume: button.prusalink_resume_job
-
-  # ── TITLE & LABELS ────────────────────────────────────────────
-  printer_name: MK4
 
 tap_action:
   action: navigate
@@ -69,6 +70,7 @@ custom_fields:
       const confirmText = variables.confirmation_text || 'Really?';
       const confirmTimeout = (variables.confirmation_timeout || 3) * 1000;
       const printerName = variables.printer_name;
+      const locale = variables.locale || 'en-GB';
 
       // ── Global confirmation helper (defined once) ─────────
       if (!window._prusaConfirm) {
@@ -137,7 +139,7 @@ custom_fields:
       // ── Time helpers ──────────────────────────────────────
       function fmtTime(iso) {
         if (!iso || iso === 'unavailable') return '—';
-        return new Date(iso).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+        return new Date(iso).toLocaleTimeString(locale, {hour:'2-digit', minute:'2-digit'});
       }
       function fmtDuration(minutes) {
         if (minutes <= 0) return '';
