@@ -52,6 +52,15 @@ All settings live in the `variables:` block at the top of the YAML. No need to t
 
 All entity IDs are defined as variables and can be reassigned individually. Most users only need to change the entity prefix if their PrusaLink integration uses a non-default name. See the YAML for the full list.
 
+Two entities are fully optional — if you don't have the hardware, simply leave the variable empty and the corresponding chip will not be shown:
+VariableChipRequired hardwareentity_enclosure_tempEnclosure temperatureBLE thermometer inside the enclosureentity_power_wattsPower draw in wattsSmart plug with energy monitoring
+
+| Variable | Chip | Required hardware |
+|---|---|---|
+| `entity_enclosure_temp` | Enclosure temperature | BLE thermometer inside the enclosure |
+| `entity_power_watts` | Power draw in watts | Smart plug with energy monitoring |
+
+
 ## Customization
 
 - **Disable a section** by setting its `show_*` boolean to `false`
