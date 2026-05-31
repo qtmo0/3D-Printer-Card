@@ -281,9 +281,9 @@ custom_fields:
             <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
               ${chip('#FAEEDA','#EF9F27','#633806','🔥',`${nozzle}°/${nozzleT}°`)}
               ${chip('#FAECE7','#D85A30','#712B13','▦',`${bed}°/${bedT}°`)}
-              ${chip('#E1F5EE','#1D9E75','#085041','◈',`${enc}°C`)}
+              ${variables.entity_enclosure_temp ? chip('#E1F5EE','#1D9E75','#085041','◈',`${enc}°C`) : ''}
               ${chip('#E6F1FB','#378ADD','#0C447C','●',material)}
-              ${chip('#FAEEDA','#EF9F27','#633806','⚡',`${watts}W`)}
+              ${variables.entity_power_watts ? chip('#FAEEDA','#EF9F27','#633806','⚡',`${watts}W`) : ''}
             </div>
           </div>
           ${printBlock}
