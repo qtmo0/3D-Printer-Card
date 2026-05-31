@@ -24,7 +24,7 @@ A compact, single-card Home Assistant dashboard for monitoring and controlling a
 ### Optional
 
 - Tasmota-flashed smart plug for power control and consumption tracking
-- BLE thermometer for enclosure temperature
+- Thermometer for enclosure temperature
 
 ## Installation
 
