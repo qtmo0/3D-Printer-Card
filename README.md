@@ -1,6 +1,6 @@
 # Prusa 3D Printer Status Card
 
-A compact, single-card Home Assistant dashboard for monitoring and controlling a Prusa MK4 (other Prusa printers should also work; I only have a MK4 to test) 3D printer via PrusaLink. Combines status, temperatures, print preview, progress bar, and control buttons into one clean card.
+A compact, single-card Home Assistant dashboard for monitoring and controlling a Prusa 3D printer via PrusaLink. Combines status, temperatures, print preview, progress bar, and control buttons into one clean card.
 
 ![3D Printer Card full Screenshot](https://raw.githubusercontent.com/qtmo0/3D-Printer-Card/refs/heads/main/screenshot_1.png)
 
